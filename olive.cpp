@@ -1,3 +1,4 @@
+#include <cstring>
 #include <memory>
 #include <stdint.h>
 #include <string>
@@ -67,9 +68,15 @@ Errno save2ppm(const Canvas& canvas, const string& path) {
 
 
 
-int main (int argc, char *argv[]) {
+int example_test() {
     Canvas canvas {RectSize {.width=400, .height=300}};
     fillCanvas(canvas, 0x00FF0000);
-    save2ppm(canvas, "test.ppm");
+
+    save2ppm(canvas, std::string(__func__) + ".ppm");
     return 0;
+}
+
+
+int main (int argc, char *argv[]) {
+    if(example_test()) return 0;
 }
