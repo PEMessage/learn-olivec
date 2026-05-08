@@ -66,7 +66,52 @@ void fillRect(
             canvas.pixels[y * size.width + x] = color;
         }
     }
+
 }
+
+
+void fillCircle(
+        Canvas& canvas,
+        const Cordinate& a,
+        const Cordinate& b,
+        Color color
+        )
+{
+
+    auto [left_, right_] = std::minmax(a.x, b.x);
+    auto [top_, bottom_] = std::minmax(a.y, b.y);
+
+
+
+    const RectSize& size = canvas.size;
+
+
+    auto left= clamp<int16_t>(left_, 0, size.width - 1);
+    auto right= clamp<int16_t>(right_, 0, size.width - 1);
+
+    auto top=clamp<int16_t>(top_, 0, size.height - 1);
+    auto bottom=clamp<int16_t>(bottom_, 0, size.height - 1);
+
+    int16_t cx = (left_ + right_) / 2;
+    int16_t cy = (top_ + bottom_) / 2;
+
+    int32_t a_sq = (right_ - left_) * (right_ - left_) / 4;
+    int32_t b_sq = (bottom_ - top_) * (bottom_ - top_) / 4;
+
+    for (auto y = top; y <= bottom; ++y) {
+        int32_t dy = y - cy;
+        for (auto x = left; x <= right; ++x) {
+            int32_t dx = x - cx;
+
+            if (dx * dx * b_sq + dy * dy * a_sq <= a_sq * b_sq) {
+                canvas.pixels[y * size.width + x] = color;
+            }
+        }
+    }
+}
+
+static_assert(is_same_v<decltype(fillRect), decltype(fillCircle)>, "Not same type");
+using FillFunction = std::function<decltype(fillRect)>;
 
 
 Errno save2ppm(const Canvas& canvas, const string& path) {
@@ -100,7 +145,7 @@ Errno save2ppm(const Canvas& canvas, const string& path) {
 }
 
 
-const Color GREY = 0x00666666;
+const Color GREY = 0x001a1a1a;
 const Color RED =  0x000000FF;
 
 
@@ -115,7 +160,7 @@ int example_test() {
 }
 
 
-int example_rect() {
+int checkerboard(FillFunction func, const string& name) {
     #define ROW 10
     #define COL 10
 
@@ -135,16 +180,25 @@ int example_rect() {
                 .y = static_cast<int16_t>(canvas.size.height / ROW * (r+1) - 1),
                 .x = static_cast<int16_t>(canvas.size.width / COL  * (c+1) - 1)
             };
-            fillRect(canvas, left_top, right_bottom, RED);
+            func(canvas, left_top, right_bottom, RED);
         }
     }
 
-    save2ppm(canvas, std::string(__func__) + ".ppm");
+    save2ppm(canvas, name + ".ppm");
     return 0;
+}
+
+int example_rect() {
+    return checkerboard(fillRect, __func__);
+}
+
+int example_circle() {
+    return checkerboard(fillCircle, __func__);
 }
 
 
 int main (int argc, char *argv[]) {
     if(example_test()) return 0;
     if(example_rect()) return 0;
+    if(example_circle()) return 0;
 }
