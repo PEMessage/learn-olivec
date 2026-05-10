@@ -96,13 +96,13 @@ void fillCircle(
     int16_t cx = (left_ + right_) / 2;
     int16_t cy = (top_ + bottom_) / 2;
 
-    int32_t a_sq = (right_ - left_) * (right_ - left_) / 4;
-    int32_t b_sq = (bottom_ - top_) * (bottom_ - top_) / 4;
+    int64_t a_sq = (int64_t)(right_ - left_) * (right_ - left_) / 4;
+    int64_t b_sq = (int64_t)(bottom_ - top_) * (bottom_ - top_) / 4;
 
     for (auto y = top; y <= bottom; ++y) {
-        int32_t dy = y - cy;
+        int64_t dy = y - cy;
         for (auto x = left; x <= right; ++x) {
-            int32_t dx = x - cx;
+            int64_t dx = x - cx;
 
             if (dx * dx * b_sq + dy * dy * a_sq <= a_sq * b_sq) {
                 canvas.pixels[y * size.width + x] = color;
@@ -136,16 +136,7 @@ void drawCircle(
     auto [left_, right_] = std::minmax(a.x, b.x);
     auto [top_, bottom_] = std::minmax(a.y, b.y);
 
-
-
-    const RectSize& size = canvas.size;
-
-
-    auto left= clamp<int16_t>(left_, 0, size.width - 1);
-    auto right= clamp<int16_t>(right_, 0, size.width - 1);
-
-    auto top=clamp<int16_t>(top_, 0, size.height - 1);
-    auto bottom=clamp<int16_t>(bottom_, 0, size.height - 1);
+    // const RectSize& size = canvas.size;
 
     int16_t cx = (left_ + right_) / 2;
     int16_t cy = (top_ + bottom_) / 2;
@@ -156,16 +147,33 @@ void drawCircle(
     int32_t a_sq = (right_ - left_) * (right_ - left_) / 4;
     int32_t b_sq = (bottom_ - top_) * (bottom_ - top_) / 4;
 
-    for (auto x = cx, y = bottom_; x <= (right) ; ++x) {
+    for (auto x = cx, y = bottom_; x <= right_ ; ++x) {
         int32_t dx = x - cx;
         int32_t dy = ((y - cy) + (y - 1 - cy)) / 2 ;
-        if(!(dx * dx * b_sq + dy * dy * a_sq <= a_sq * b_sq)) {
-            y --;
+
+        if (dx * dx * b_sq + dy * dy * a_sq <=  a_sq * b_sq ) {
+            drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = x                        }, color) ;
+            drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = x                        }, color) ;
+            drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = (int16_t)(double_cx - x) }, color) ;
+            drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = (int16_t)(double_cx - x) }, color) ;
+        } else {
+            // while(b) {
+            //     if(a) break
+            // }
+            // -->
+            // -->
+            // while(b && !a) {
+            // }
+            while(!(dx * dx * b_sq + dy * dy * a_sq <= a_sq * b_sq) && !(y<=cy)) {
+                y --;
+                // if (y <= cy) break;
+                drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = x                        }, color) ;
+                drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = x                        }, color) ;
+                drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = (int16_t)(double_cx - x) }, color) ;
+                drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = (int16_t)(double_cx - x) }, color) ;
+                dy = ((y - cy) + (y - 1 - cy)) / 2 ;
+            }
         }
-        drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = x                        }, color) ;
-        drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = x                        }, color) ;
-        drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = (int16_t)(double_cx - x) }, color) ;
-        drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = (int16_t)(double_cx - x) }, color) ;
     }
 }
 
@@ -220,8 +228,8 @@ int example_test() {
 
 
 int checkerboard(FillFunction func, const string& name) {
-    #define ROW 10
-    #define COL 10
+    #define ROW 2
+    #define COL 2
 
     Canvas canvas {RectSize {.width=400, .height=300}};
     fillCanvas(canvas, GREY);
@@ -252,6 +260,10 @@ int example_rect() {
 }
 
 int example_circle() {
+    return checkerboard(fillCircle, __func__);
+}
+
+int example_draw_circle() {
     return checkerboard(drawCircle, __func__);
 }
 
@@ -260,4 +272,5 @@ int main (int argc, char *argv[]) {
     if(example_test()) return 0;
     if(example_rect()) return 0;
     if(example_circle()) return 0;
+    if(example_draw_circle()) return 0;
 }
