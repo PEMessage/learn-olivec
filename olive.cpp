@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstring>
 #include <memory>
+#include <iostream>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -110,6 +111,64 @@ void fillCircle(
     }
 }
 
+
+void drawPoint(
+        Canvas& canvas,
+        const Cordinate& cord,
+        Color color
+        )
+{
+    if (!(0 <= cord.x && cord.x < canvas.size.width))  { return; }
+    if (!(0 <= cord.y && cord.y < canvas.size.height)) { return; }
+
+    canvas.pixels[cord.y * canvas.size.width + cord.x] = color;
+    return;
+}
+
+
+void drawCircle(
+        Canvas& canvas,
+        const Cordinate& a,
+        const Cordinate& b,
+        Color color
+        )
+{
+    auto [left_, right_] = std::minmax(a.x, b.x);
+    auto [top_, bottom_] = std::minmax(a.y, b.y);
+
+
+
+    const RectSize& size = canvas.size;
+
+
+    auto left= clamp<int16_t>(left_, 0, size.width - 1);
+    auto right= clamp<int16_t>(right_, 0, size.width - 1);
+
+    auto top=clamp<int16_t>(top_, 0, size.height - 1);
+    auto bottom=clamp<int16_t>(bottom_, 0, size.height - 1);
+
+    int16_t cx = (left_ + right_) / 2;
+    int16_t cy = (top_ + bottom_) / 2;
+
+    int16_t double_cx = (left_ + right_);
+    int16_t double_cy = (top_ + bottom_);
+
+    int32_t a_sq = (right_ - left_) * (right_ - left_) / 4;
+    int32_t b_sq = (bottom_ - top_) * (bottom_ - top_) / 4;
+
+    for (auto x = cx, y = bottom_; x <= (right) ; ++x) {
+        int32_t dx = x - cx;
+        int32_t dy = ((y - cy) + (y - 1 - cy)) / 2 ;
+        if(!(dx * dx * b_sq + dy * dy * a_sq <= a_sq * b_sq)) {
+            y --;
+        }
+        drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = x                        }, color) ;
+        drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = x                        }, color) ;
+        drawPoint(canvas, Cordinate {.y = (int16_t)(double_cy - y) , .x = (int16_t)(double_cx - x) }, color) ;
+        drawPoint(canvas, Cordinate {.y = (int16_t)y               , .x = (int16_t)(double_cx - x) }, color) ;
+    }
+}
+
 static_assert(is_same_v<decltype(fillRect), decltype(fillCircle)>, "Not same type");
 using FillFunction = std::function<decltype(fillRect)>;
 
@@ -193,7 +252,7 @@ int example_rect() {
 }
 
 int example_circle() {
-    return checkerboard(fillCircle, __func__);
+    return checkerboard(drawCircle, __func__);
 }
 
 
