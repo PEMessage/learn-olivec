@@ -38,6 +38,19 @@ void fillCanvas(Canvas& canvas, uint32_t color) {
     }
 };
 
+void drawPoint(
+        Canvas& canvas,
+        const Cordinate& cord,
+        Color color
+        )
+{
+    if (!(0 <= cord.x && cord.x < canvas.size.width))  { return; }
+    if (!(0 <= cord.y && cord.y < canvas.size.height)) { return; }
+
+    canvas.pixels[cord.y * canvas.size.width + cord.x] = color;
+    return;
+}
+
 
 
 void fillRect(
@@ -111,6 +124,46 @@ void fillCircle(
     }
 }
 
+void fillTriangle(
+        Canvas& canvas,
+        const Cordinate& a,
+        const Cordinate& b,
+        const Cordinate& c,
+        Color color
+        )
+{
+
+    auto [left_, right_] = std::minmax({a.x, b.x, c.x});
+    auto [top_, bottom_] = std::minmax({a.y, b.y, c.y});
+
+
+
+    const RectSize& size = canvas.size;
+
+
+    auto left= clamp<int16_t>(left_, 0, size.width - 1);
+    auto right= clamp<int16_t>(right_, 0, size.width - 1);
+
+    auto top=clamp<int16_t>(top_, 0, size.height - 1);
+    auto bottom=clamp<int16_t>(bottom_, 0, size.height - 1);
+
+
+    for (auto y = top; y <= bottom; ++y) {
+        for (auto x = left; x <= right; ++x) {
+
+            auto edge1 = (b.y - a.y) * (x - a.x) - (b.x - a.x) * (y - a.y);
+            auto edge2 = (c.y - b.y) * (x - b.x) - (c.x - b.x) * (y - b.y);
+            auto edge3 = (a.y - c.y) * (x - c.x) - (a.x - c.x) * (y - c.y);
+
+            if (
+                    (edge1 >= 0 && edge2 >= 0 && edge3 >= 0) ||
+                    (edge1 <= 0 && edge2 <= 0 && edge3 <= 0)
+               ) {
+                drawPoint(canvas, Cordinate { .y = y, .x = x} , color);
+            }
+        }
+    }
+}
 
 
 void drawCircle(
@@ -299,6 +352,13 @@ int example_line() {
             canvas,
             Cordinate{.y = 0,   .x = 200},
             Cordinate{.y = 200, .x = 200},
+            RED
+            );
+    fillTriangle(
+            canvas,
+            Cordinate{.y = 200, .x = 200},
+            Cordinate{.y = 300, .x = 0},
+            Cordinate{.y = 300, .x = 400},
             RED
             );
 
