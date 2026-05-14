@@ -112,19 +112,6 @@ void fillCircle(
 }
 
 
-void drawPoint(
-        Canvas& canvas,
-        const Cordinate& cord,
-        Color color
-        )
-{
-    if (!(0 <= cord.x && cord.x < canvas.size.width))  { return; }
-    if (!(0 <= cord.y && cord.y < canvas.size.height)) { return; }
-
-    canvas.pixels[cord.y * canvas.size.width + cord.x] = color;
-    return;
-}
-
 
 void drawCircle(
         Canvas& canvas,
@@ -174,6 +161,35 @@ void drawCircle(
                 dy = ((y - cy) + (y - 1 - cy)) / 2 ;
             }
         }
+    }
+}
+
+
+void drawLine(
+        Canvas& canvas,
+        const Cordinate& a,
+        const Cordinate& b,
+        Color color
+        )
+{
+    // Bresenham
+    int16_t x0 = a.x, y0 = a.y;
+    int16_t x1 = b.x, y1 = b.y;
+
+    int16_t dx = std::abs(x1 - x0);
+    int16_t dy = std::abs(y1 - y0);
+    int16_t sx = (x0 < x1) ? 1 : -1;
+    int16_t sy = (y0 < y1) ? 1 : -1;
+    int16_t err = dx - dy;
+
+    while (true) {
+        drawPoint(canvas, Cordinate { .y = y0, .x = x0  }, color);
+
+        if (x0 == x1 && y0 == y1) break;
+
+        int16_t e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x0 += sx; }
+        if (e2 <  dx) { err += dx; y0 += sy; }
     }
 }
 
@@ -228,8 +244,8 @@ int example_test() {
 
 
 int checkerboard(FillFunction func, const string& name) {
-    #define ROW 2
-    #define COL 2
+    #define ROW 10
+    #define COL 10
 
     Canvas canvas {RectSize {.width=400, .height=300}};
     fillCanvas(canvas, GREY);
@@ -255,6 +271,7 @@ int checkerboard(FillFunction func, const string& name) {
     return 0;
 }
 
+
 int example_rect() {
     return checkerboard(fillRect, __func__);
 }
@@ -267,10 +284,33 @@ int example_draw_circle() {
     return checkerboard(drawCircle, __func__);
 }
 
+int example_draw_line() {
+    return checkerboard(drawLine, __func__);
+}
+
+
+
+
+int example_line() {
+    Canvas canvas {RectSize {.width=400, .height=300}};
+    fillCanvas(canvas, GREY);
+
+    drawLine(
+            canvas,
+            Cordinate{.y = 0,   .x = 200},
+            Cordinate{.y = 200, .x = 200},
+            RED
+            );
+
+    save2ppm(canvas, string(__func__) + ".ppm");
+    return 0;
+}
 
 int main (int argc, char *argv[]) {
     if(example_test()) return 0;
     if(example_rect()) return 0;
     if(example_circle()) return 0;
     if(example_draw_circle()) return 0;
+    if(example_draw_line()) return 0;
+    if(example_line()) return 0;
 }
